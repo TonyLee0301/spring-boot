@@ -171,10 +171,12 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 		SPRING_BOOT_LOGGING_LOGGERS = Collections.unmodifiableMap(loggers);
 	}
 
+	//支持的事件类型，
 	private static final Class<?>[] EVENT_TYPES = { ApplicationStartingEvent.class,
 			ApplicationEnvironmentPreparedEvent.class, ApplicationPreparedEvent.class, ContextClosedEvent.class,
 			ApplicationFailedEvent.class };
 
+	//支持的资源类型
 	private static final Class<?>[] SOURCE_TYPES = { SpringApplication.class, ApplicationContext.class };
 
 	private static final AtomicBoolean shutdownHookRegistered = new AtomicBoolean(false);
@@ -216,6 +218,7 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
+		//根据不同的事件，调用对应的方法
 		if (event instanceof ApplicationStartingEvent) {
 			onApplicationStartingEvent((ApplicationStartingEvent) event);
 		}
@@ -235,17 +238,25 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 	}
 
 	private void onApplicationStartingEvent(ApplicationStartingEvent event) {
+		//获取对应的LoggingSystem
 		this.loggingSystem = LoggingSystem.get(event.getSpringApplication().getClassLoader());
+		//并做LoggingSystem初始化前的准备
 		this.loggingSystem.beforeInitialize();
 	}
 
 	private void onApplicationEnvironmentPreparedEvent(ApplicationEnvironmentPreparedEvent event) {
+		//如果loggingSystem为空，就重新获取
 		if (this.loggingSystem == null) {
 			this.loggingSystem = LoggingSystem.get(event.getSpringApplication().getClassLoader());
 		}
+		//初始化
 		initialize(event.getEnvironment(), event.getSpringApplication().getClassLoader());
 	}
 
+	/**
+	 * application准备事件，针对 LoggingApplicationListener 主要功能，就是注册向 beanFactory 对应的 loggingSystem,logFile,loggerGroups
+	 * @param event
+	 */
 	private void onApplicationPreparedEvent(ApplicationPreparedEvent event) {
 		ConfigurableListableBeanFactory beanFactory = event.getApplicationContext().getBeanFactory();
 		if (!beanFactory.containsBean(LOGGING_SYSTEM_BEAN_NAME)) {
@@ -274,19 +285,32 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 	/**
 	 * Initialize the logging system according to preferences expressed through the
 	 * {@link Environment} and the classpath.
+	 * 根据通过 环境 和 classpath 表示的首选项来初始化日志系统
 	 * @param environment the environment
 	 * @param classLoader the classloader
 	 */
 	protected void initialize(ConfigurableEnvironment environment, ClassLoader classLoader) {
+		//将 spring 环境的相关参数数据，设置到 LoggingSystemProperties 中
+		//主要包含 spring boot 配置中的 logging.
+		//exception-conversion-word,pattern.console、pattern.file、file.clean-history-on-start、file.max-history、file.max-size
+		//file.total-size-cap、pattern.level、pattern.dateformat、pattern.rolling-file-name
+		//参数转换成 相关log日志框架需要的配置，并设置到 jvm 环境中。
 		new LoggingSystemProperties(environment).apply();
+		//根据 spring 环境的参数，创建 logFile
 		this.logFile = LogFile.get(environment);
 		if (this.logFile != null) {
+			//像 jvm 系统环境 添加 LOG_PATH , LOG_FILE 配置
 			this.logFile.applyToSystemProperties();
 		}
+		//设置默认的default_group_loggers
 		this.loggerGroups = new LoggerGroups(DEFAULT_GROUP_LOGGERS);
+		//根据 spring 环境设置 提前初始化log level
 		initializeEarlyLoggingLevel(environment);
+		//初始化 LoggingSystem
 		initializeSystem(environment, this.loggingSystem, this.logFile);
+		//最后设置 log level
 		initializeFinalLoggingLevels(environment, this.loggingSystem);
+		//注册 jvm 关闭的钩子
 		registerShutdownHookIfNecessary(environment, this.loggingSystem);
 	}
 
@@ -308,13 +332,17 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 
 	private void initializeSystem(ConfigurableEnvironment environment, LoggingSystem system, LogFile logFile) {
 		LoggingInitializationContext initializationContext = new LoggingInitializationContext(environment);
+		//获取 logging.config 配置
 		String logConfig = environment.getProperty(CONFIG_PROPERTY);
-		if (ignoreLogConfig(logConfig)) {
+		if (ignoreLogConfig(logConfig)) {//logConfig为空，或者 配置已"-D"开头
+			//初始化LoggingSystem
 			system.initialize(initializationContext, null, logFile);
 		}
 		else {
 			try {
+				//打开判断该路径的文件，并关闭，判断配置文件是否存在
 				ResourceUtils.getURL(logConfig).openStream().close();
+				//初始化LoggingSystem
 				system.initialize(initializationContext, logConfig, logFile);
 			}
 			catch (Exception ex) {

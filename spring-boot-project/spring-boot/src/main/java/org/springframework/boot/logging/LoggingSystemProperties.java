@@ -123,7 +123,7 @@ public class LoggingSystemProperties {
 		setSystemProperty(PID_KEY, new ApplicationPid().toString());
 		setSystemProperty(resolver, CONSOLE_LOG_PATTERN, "pattern.console");
 		setSystemProperty(resolver, FILE_LOG_PATTERN, "pattern.file");
-		setSystemProperty(resolver, FILE_CLEAN_HISTORY_ON_START, "file.clean-history-on-start");
+			setSystemProperty(resolver, FILE_CLEAN_HISTORY_ON_START, "file.clean-history-on-start");
 		setSystemProperty(resolver, FILE_MAX_HISTORY, "file.max-history");
 		setSystemProperty(resolver, FILE_MAX_SIZE, "file.max-size");
 		setSystemProperty(resolver, FILE_TOTAL_SIZE_CAP, "file.total-size-cap");

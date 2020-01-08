@@ -101,11 +101,14 @@ public class LogbackLoggingSystem extends Slf4JLoggingSystem {
 
 	@Override
 	public void beforeInitialize() {
+		//获取 logback 的 LoggerFactory
 		LoggerContext loggerContext = getLoggerContext();
 		if (isAlreadyInitialized(loggerContext)) {
 			return;
 		}
+		//绑定 slf4j
 		super.beforeInitialize();
+		//设置filter
 		loggerContext.getTurboFilterList().add(FILTER);
 	}
 

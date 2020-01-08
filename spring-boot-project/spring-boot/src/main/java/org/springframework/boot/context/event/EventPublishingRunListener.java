@@ -45,16 +45,20 @@ import org.springframework.util.ErrorHandler;
  */
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
 
+	//SpringApplication 应用
 	private final SpringApplication application;
 
+	//启动参数
 	private final String[] args;
 
+	//一个事件广播器
 	private final SimpleApplicationEventMulticaster initialMulticaster;
 
 	public EventPublishingRunListener(SpringApplication application, String[] args) {
 		this.application = application;
 		this.args = args;
 		this.initialMulticaster = new SimpleApplicationEventMulticaster();
+		//将之前SpringApplication初始化阶段的listener都让SimpleApplicationEventMulticaster来做通知
 		for (ApplicationListener<?> listener : application.getListeners()) {
 			this.initialMulticaster.addApplicationListener(listener);
 		}
@@ -65,44 +69,54 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
 		return 0;
 	}
 
+	//推送 ApplicationStartingEvent 应用正在启动的事件
 	@Override
 	public void starting() {
 		this.initialMulticaster.multicastEvent(new ApplicationStartingEvent(this.application, this.args));
 	}
 
+	//推送 ApplicationEnvironmentPreparedEvent 环境已准备的事件
 	@Override
 	public void environmentPrepared(ConfigurableEnvironment environment) {
 		this.initialMulticaster
 				.multicastEvent(new ApplicationEnvironmentPreparedEvent(this.application, this.args, environment));
 	}
 
+	//推送 ApplicationContextInitializedEvent 应用上下文初始化事件
 	@Override
 	public void contextPrepared(ConfigurableApplicationContext context) {
 		this.initialMulticaster
 				.multicastEvent(new ApplicationContextInitializedEvent(this.application, this.args, context));
 	}
 
+	//推送 ApplicationPreparedEvent 应用已准备的事件
 	@Override
 	public void contextLoaded(ConfigurableApplicationContext context) {
+		//从所有 ApplicationListener 中找到同时实现了 ApplicationContextAware 的接口
+		//并将这些监听器，加到 应用上下文当中去的 应用监听器去
 		for (ApplicationListener<?> listener : this.application.getListeners()) {
 			if (listener instanceof ApplicationContextAware) {
 				((ApplicationContextAware) listener).setApplicationContext(context);
 			}
 			context.addApplicationListener(listener);
 		}
+		//推送 ApplicationPreparedEvent 事件
 		this.initialMulticaster.multicastEvent(new ApplicationPreparedEvent(this.application, this.args, context));
 	}
 
+	//推送 ApplicationStartedEvent 应用启动的事件，但是 ApplicationRunner 和 CommandLineRunner 还没有被调用时
 	@Override
 	public void started(ConfigurableApplicationContext context) {
 		context.publishEvent(new ApplicationStartedEvent(this.application, this.args, context));
 	}
 
+	//推送 ApplicationReadyEvent 应用准备就绪的事件
 	@Override
 	public void running(ConfigurableApplicationContext context) {
 		context.publishEvent(new ApplicationReadyEvent(this.application, this.args, context));
 	}
 
+	//推送 ApplicationFailedEvent 失败事件
 	@Override
 	public void failed(ConfigurableApplicationContext context, Throwable exception) {
 		ApplicationFailedEvent event = new ApplicationFailedEvent(this.application, this.args, context, exception);

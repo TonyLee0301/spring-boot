@@ -144,17 +144,23 @@ public abstract class LoggingSystem {
 
 	/**
 	 * Detect and return the logging system in use. Supports Logback and Java Logging.
+	 * 检测并返回正在使用的日志系统。支持Logback和Java日志记录。
 	 * @param classLoader the classloader
 	 * @return the logging system
 	 */
 	public static LoggingSystem get(ClassLoader classLoader) {
+		//获取系统配置 org.springframework.boot.logging.LoggingSystem
 		String loggingSystem = System.getProperty(SYSTEM_PROPERTY);
+		//如果存在则直接返回
 		if (StringUtils.hasLength(loggingSystem)) {
 			if (NONE.equals(loggingSystem)) {
+				//返回一个什么都不做的对象
 				return new NoOpLoggingSystem();
 			}
+			//根据配置 实例化 LoggingSystem
 			return get(classLoader, loggingSystem);
 		}
+		//从 Spring 当前支持的日志系统中，优先级由上到下，分别是logback，log4j，java.util.logging 查找对应的 jar包， 存在并 实例化返回。
 		return SYSTEMS.entrySet().stream().filter((entry) -> ClassUtils.isPresent(entry.getKey(), classLoader))
 				.map((entry) -> get(classLoader, entry.getValue())).findFirst()
 				.orElseThrow(() -> new IllegalStateException("No suitable logging system located"));
