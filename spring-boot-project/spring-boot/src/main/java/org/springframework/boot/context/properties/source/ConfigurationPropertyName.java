@@ -794,6 +794,7 @@ public final class ConfigurationPropertyName implements Comparable<Configuration
 		}
 
 		Elements parse(Function<CharSequence, CharSequence> valueProcessor) {
+			//获取当前资源的 字符串
 			int length = this.source.length();
 			int openBracketCount = 0;
 			int start = 0;

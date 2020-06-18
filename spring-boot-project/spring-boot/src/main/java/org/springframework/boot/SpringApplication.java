@@ -516,12 +516,16 @@ public class SpringApplication {
 	 * 模板方法，通过顺序 委托给 configurePropertySources configureProfiles
 	 */
 	protected void configureEnvironment(ConfigurableEnvironment environment, String[] args) {
+		//由于当前环境变量才刚创建，因此主要处理的相关环境，均是通过启动参数 args 传递过来的。
 		if (this.addConversionService) {
 			//获取 conversionService 并将 conversionService 设置到 environment 中
+			//conversionService 设置相关的转换，格式化类，到环境中
 			ConversionService conversionService = ApplicationConversionService.getSharedInstance();
 			environment.setConversionService((ConfigurableConversionService) conversionService);
 		}
+		//添加/删除/修改propertySource,主要是将默认的 defaultProperties 和 启动参数 args 设置到 environment 当中
 		configurePropertySources(environment, args);
+		//配置 profile
 		configureProfiles(environment, args);
 	}
 
@@ -533,10 +537,13 @@ public class SpringApplication {
 	 * @see #configureEnvironment(ConfigurableEnvironment, String[])
 	 */
 	protected void configurePropertySources(ConfigurableEnvironment environment, String[] args) {
+		//通过环境，获取到sources
 		MutablePropertySources sources = environment.getPropertySources();
+		//添加defaultProperties 到 environment 中
 		if (this.defaultProperties != null && !this.defaultProperties.isEmpty()) {
 			sources.addLast(new MapPropertySource("defaultProperties", this.defaultProperties));
 		}
+		//设置(添加、变更)启动参数到environment中。
 		if (this.addCommandLineProperties && args.length > 0) {
 			String name = CommandLinePropertySource.COMMAND_LINE_PROPERTY_SOURCE_NAME;
 			if (sources.contains(name)) {
