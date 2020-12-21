@@ -305,7 +305,7 @@ public class SpringApplication {
 		stopWatch.start();
 		ConfigurableApplicationContext context = null;
 		Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList<>();
-		//设置 java.awt.headless 为true
+		//设置 java.awt.headless 为true Headless模式是系统的一种配置模式。在系统可能缺少显示设备、键盘或鼠标这些外设的情况下可以使用该模式。
 		configureHeadlessProperty();
 		//创建SpringApplicationRunListener
 		SpringApplicationRunListeners listeners = getRunListeners(args);
